@@ -48,6 +48,17 @@ You may also copy this complete directory to `AstrBot/data/plugins/astrbot_plugi
 
 Restart AstrBot or reload the plugin from the WebUI's Plugins page. AstrBot installs the base attachment parsing dependencies from `requirements.txt`.
 
+### Work with a public AstrBot configuration repository
+
+This plugin repository can work alongside a public AstrBot configuration repository, while staying fully independent:
+
+- The **configuration repository** may contain sanitized AstrBot setup instructions, platform/model templates, and compatibility notes. It must not commit owner IDs, model keys, platform tokens, real chat records, databases, logs, or production configuration files.
+- This **plugin repository** contains only installable plugin source, dependencies, documentation, and tests. It must not copy runtime configuration from the configuration repository or read it through a Git submodule or automatic sync script.
+- The installation order is: generic AstrBot preparation from the configuration repository, install this plugin, then enter the owner ID and desired switches locally. Owner IDs and credentials remain in the user's own AstrBot configuration.
+- The repositories coordinate only through version notes: plugin 1.0.0 requires AstrBot `>=4.28,<5`. Update compatibility notes on both sides only when a configuration template or plugin-installation step changes; never commit runtime data across repositories.
+
+The formal public configuration-repository link will be added after its remote URL is confirmed. Do not clone or configure a guessed repository address before then.
+
 ### 3. Configure owner and switches
 
 Open “Plugins → Himeko Companion → Plugin configuration” in the AstrBot WebUI:
