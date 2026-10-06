@@ -57,7 +57,7 @@ This plugin repository can work alongside a public AstrBot configuration reposit
 - The installation order is: generic AstrBot preparation from the configuration repository, install this plugin, then enter the owner ID and desired switches locally. Owner IDs and credentials remain in the user's own AstrBot configuration.
 - The repositories coordinate only through version notes: plugin 1.0.0 requires AstrBot `>=4.28,<5`. Update compatibility notes on both sides only when a configuration template or plugin-installation step changes; never commit runtime data across repositories.
 
-The companion configuration repository is [astrbot_config_himeko](https://github.com/fushuyiliu/astrbot_config_himeko). The link can be temporarily unavailable before its first remote publication; do not substitute an unreviewed third-party mirror.
+The companion configuration repository is [astrbot_config_himeko](https://github.com/fushuyiliu/astrbot_config_himeko). Both repositories are currently reviewed as private candidates; the link will be generally accessible only after each repository is separately approved for public release. Do not substitute an unreviewed third-party mirror.
 
 ### 3. Configure owner and switches
 
