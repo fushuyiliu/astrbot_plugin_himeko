@@ -57,7 +57,7 @@ git clone https://github.com/fushuyiliu/astrbot_plugin_himeko.git
 - 安装顺序为“配置仓的通用 AstrBot 准备步骤 → 安装本插件 → 在本机填入主人 ID 和按需开关”。主人 ID 与任何凭据只保存在用户自己的 AstrBot 配置中。
 - 两仓只通过版本说明联动：本插件 1.0.0 要求 AstrBot `>=4.28,<5`。当配置模板或插件安装步骤变化时，才需要同时更新两边的兼容性说明；日常运行数据绝不跨仓提交。
 
-配置仓的正式公开链接将在其远程地址确认后加入此处；在此之前不要根据猜测的仓库地址克隆或配置。
+对应配置仓为 [astrbot_config_himeko](https://github.com/fushuyiliu/astrbot_config_himeko)。在它完成首次远程发布前，该链接可能暂时不可访问；请勿使用未审查的第三方镜像代替。
 
 ### 3. 配置主人与开关
 
