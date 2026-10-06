@@ -1,0 +1,14 @@
+name: astrbot_plugin_himeko
+display_name: Himeko Companion
+short_desc: Owner-scoped memory, reminders, and local attachment Q&A for AstrBot.
+desc: >-
+  A privacy-first, opt-in companion plugin inspired by Himeko. Sensitive features
+  stay disabled until an exact owner ID and the corresponding feature switches are configured.
+version: 1.0.0
+author: fushuyiliu
+astrbot_version: ">=4.28,<5"
+tags:
+  - companion
+  - privacy
+  - memory
+  - reminder

@@ -1,0 +1,30 @@
+# Python and test output
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+
+# Local environments and editor state
+.venv/
+.validation-venv/
+.vscode/
+.idea/
+
+# Plugin data, OCR models, temporary files, and generated release archives
+data/
+plugin_data/
+attachments/
+ocr-models/
+*.sqlite3
+*.sqlite3-*
+*.zip
+*.log
+
+# Local settings and credentials
+.env
+.env.*
+!.env.example
+local.settings.json
+*_config.json

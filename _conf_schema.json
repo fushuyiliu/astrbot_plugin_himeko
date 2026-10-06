@@ -1,0 +1,46 @@
+{
+  "owner_id": {
+    "type": "string",
+    "description": "主人用户 ID",
+    "hint": "填入消息平台显示的精确发送者 ID。留空时，记忆、提醒和附件能力全部关闭。请勿填入昵称、手机号或密码。",
+    "default": "",
+    "secret": true,
+    "obvious_hint": true
+  },
+  "platform_id": {
+    "type": "string",
+    "description": "限定平台 ID（可选）",
+    "hint": "留空允许匹配的主人 ID 在任意私聊平台使用；填写 AstrBot 的 platform_id 后只接受该平台。",
+    "default": ""
+  },
+  "enable_character_prompt": {
+    "type": "bool",
+    "description": "启用姬子互动补充提示",
+    "hint": "仅对配置的主人私聊追加下方通用角色提示。AstrBot 的模型与人格仍由 AstrBot 配置管理。",
+    "default": false
+  },
+  "character_prompt": {
+    "type": "text",
+    "description": "互动补充提示",
+    "hint": "只放通用角色表达偏好，不要填个人经历、聊天记录、密钥或联系信息。",
+    "default": "这是一次非官方、尊重边界的角色互动。请以《崩坏：星穹铁道》中姬子所呈现的从容、温和、理性与鼓励式沟通为灵感；不冒充官方，不捏造设定，不替用户作决定。遇到隐私、健康、法律、财务或现实风险问题时，说明局限并建议用户寻求合适的现实支持。"
+  },
+  "enable_memory": {
+    "type": "bool",
+    "description": "启用主人专属记忆",
+    "hint": "只保存主人使用 /记住 明确确认的短事实；默认关闭。",
+    "default": false
+  },
+  "enable_reminders": {
+    "type": "bool",
+    "description": "启用主人专属提醒",
+    "hint": "提醒仅能发送到当前进程中重新确认过的主人私聊上下文；默认关闭。",
+    "default": false
+  },
+  "enable_attachments": {
+    "type": "bool",
+    "description": "启用主人附件问答",
+    "hint": "附件先在本地解析，确认后才把文字和问题交给当前 AstrBot 模型；默认关闭。",
+    "default": false
+  }
+}

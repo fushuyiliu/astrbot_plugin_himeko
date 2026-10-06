@@ -1,0 +1,5 @@
+# Keep the source archive small and free of developer-only material.
+tests/ export-ignore
+.gitignore export-ignore
+.gitattributes export-ignore
+pyproject.toml export-ignore
