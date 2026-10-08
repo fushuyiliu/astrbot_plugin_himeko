@@ -34,7 +34,7 @@ RULES = (
     Rule(
         "credential_assignment",
         re.compile(
-            r"(?i)(?:api[_ -]?key|access[_ -]?key|secret|token|password)\s*[:=]\s*"
+            r"(?i)(?:[\"']?(?:api[_ -]?key|access[_ -]?key|secret|token|password)[\"']?)\s*[:=]\s*"
             r"[\"']?(?!<|\$\{|YOUR_|REPLACE_|example|changeme)[^\s\"']{8,}"
         ),
     ),
@@ -75,6 +75,7 @@ TEXT_SUFFIXES = {
     ".ini",
 }
 SKIP_PARTS = {".git", "__pycache__", ".pytest_cache", ".ruff_cache", ".venv", ".validation-venv"}
+AUDITOR_RELATIVE_PATH = "tools/audit_public_release.py"
 
 
 def categories_in_text(text: str) -> set[str]:
@@ -85,7 +86,7 @@ def release_files(root: Path):
     for path in root.rglob("*"):
         if not path.is_file() or any(part in SKIP_PARTS for part in path.parts):
             continue
-        if path.relative_to(root).as_posix() == "tools/audit_public_release.py":
+        if path.relative_to(root).as_posix() == AUDITOR_RELATIVE_PATH:
             # The scanner necessarily contains the patterns it is designed to
             # detect. Its own source is exercised through the test suite.
             continue
@@ -128,6 +129,10 @@ def scan_history(repo: Path) -> list[tuple[str, str, str]]:
     commits = [value for value in git_output(repo, ["rev-list", "--all"]).splitlines() if value]
     for commit in commits:
         for path in git_output(repo, ["ls-tree", "-r", "--name-only", commit]).splitlines():
+            if path == AUDITOR_RELATIVE_PATH:
+                continue
+            if FORBIDDEN_NAMES.search(Path(path).name):
+                findings.add(("forbidden_filename", commit[:12], path))
             if Path(path).suffix.lower() not in TEXT_SUFFIXES:
                 continue
             try:
@@ -164,7 +169,7 @@ def main() -> int:
             print(f"history-scan-error: {type(exc).__name__}", file=sys.stderr)
             return 2
         print_findings("private-history", history_findings)
-    return 1 if tree_findings else 0
+    return 1 if tree_findings or history_findings else 0
 
 
 if __name__ == "__main__":

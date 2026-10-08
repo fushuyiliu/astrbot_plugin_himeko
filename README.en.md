@@ -38,7 +38,7 @@ The first release deliberately excludes personal-profile reading, cloud deployme
 
 ### 2. Install the plugin
 
-After the public repository is released, run this from AstrBot's `data/plugins` directory:
+After the formal Public Release Gate passes and the public URL is available, run this from AstrBot's `data/plugins` directory:
 
 ```powershell
 git clone https://github.com/fushuyiliu/astrbot_plugin_himeko.git
@@ -57,7 +57,7 @@ This plugin repository can work alongside a public AstrBot configuration reposit
 - The installation order is: generic AstrBot preparation from the configuration repository, install this plugin, then enter the owner ID and desired switches locally. Owner IDs and credentials remain in the user's own AstrBot configuration.
 - The repositories coordinate only through version notes: plugin 1.0.0 requires AstrBot `>=4.28,<5`. Update compatibility notes on both sides only when a configuration template or plugin-installation step changes; never commit runtime data across repositories.
 
-The companion configuration repository is [astrbot_config_himeko](https://github.com/fushuyiliu/astrbot_config_himeko). Both repositories are currently reviewed as private candidates; the link will be generally accessible only after each repository is separately approved for public release. Do not substitute an unreviewed third-party mirror.
+The companion configuration repository is [astrbot_config_himeko](https://github.com/fushuyiliu/astrbot_config_himeko). Both repositories are independently reviewed as public-release candidates; each link is intended for general use only after its own Public Release Gate passes and visibility changes. Do not substitute an unreviewed third-party mirror.
 
 ### 3. Configure owner and switches
 
@@ -148,7 +148,7 @@ To fully erase this plugin's data, stop AstrBot and delete the `astrbot_plugin_h
 
 ## Verified environment and limitations
 
-- The plugin entry has been imported against Python 3.12 and AstrBot 4.28.1, with eight unit tests. A full message-platform installation acceptance test in an independent AstrBot instance is still outstanding.
+- The plugin entry has been imported against Python 3.12 and AstrBot 4.28.1, with nine public contract tests. A full message-platform installation acceptance test in an independent AstrBot instance is still outstanding.
 - It makes no performance promise for latency, OCR accuracy, reminder timing, or model output correctness.
 - Attachments are limited to 20 MB. Legacy `.doc`, archives, and executable files are unsupported.
 - Only the owner's private-chat scenario is in scope for v1. Group chat, multi-user isolation, and cross-platform same-ID merging are not included.
@@ -170,10 +170,14 @@ Common issues:
 
 ## Development, tests, and contributions
 
+Public contract tests require a development environment with `pytest` installed and an importable AstrBot package. Use an AstrBot Python environment that has both, or use a separate test environment and add the AstrBot source root to `PYTHONPATH` before running them. The tests write AstrBot runtime files to an isolated temporary directory, not the candidate source root; set `HIMEKO_PUBLIC_CONTRACT_RUNTIME_ROOT` to choose that directory. The example uses placeholders and does not vendor AstrBot into this repository:
+
 ```powershell
-python -m pytest
+$env:PYTHONPATH = "<path-to-AstrBot>;$env:PYTHONPATH"
+$env:HIMEKO_PUBLIC_CONTRACT_RUNTIME_ROOT = "<path-to-temporary-test-root>"
+python -m pytest tests/test_public_contract.py
 ruff check .
-python tools/audit_public_release.py .
+python tools/audit_public_release.py . --history .
 ```
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before contributing. Report security issues privately as described in [SECURITY.md](SECURITY.md); never paste secrets or private chat content into a public issue.

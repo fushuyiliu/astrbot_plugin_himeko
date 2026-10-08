@@ -1,9 +1,29 @@
 import json
+import os
 import sys
+import tempfile
 from pathlib import Path
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT.parent))
+
+
+@pytest.fixture(scope="module", autouse=True)
+def isolated_astrbot_runtime():
+    """Keep AstrBot's runtime files outside the public candidate source tree."""
+    requested_root = os.environ.get("HIMEKO_PUBLIC_CONTRACT_RUNTIME_ROOT")
+    parent = Path(requested_root).resolve() if requested_root else None
+    if parent is not None:
+        parent.mkdir(parents=True, exist_ok=True)
+    previous_cwd = Path.cwd()
+    with tempfile.TemporaryDirectory(prefix="himeko-public-contract-", dir=parent) as runtime_root:
+        os.chdir(runtime_root)
+        try:
+            yield Path(runtime_root)
+        finally:
+            os.chdir(previous_cwd)
 
 
 def plugin_modules():
@@ -12,7 +32,9 @@ def plugin_modules():
     return attachments, reminders, storage
 
 
-def test_sensitive_features_default_to_off():
+def test_sensitive_features_default_to_off(isolated_astrbot_runtime):
+    assert Path.cwd() == isolated_astrbot_runtime
+    assert ROOT not in isolated_astrbot_runtime.parents
     schema = json.loads((ROOT / "_conf_schema.json").read_text(encoding="utf-8"))
     assert schema["owner_id"]["default"] == ""
     assert schema["enable_character_prompt"]["default"] is False

@@ -38,7 +38,7 @@
 
 ### 2. 安装插件
 
-公开仓发布后，在 AstrBot 的 `data/plugins` 目录执行：
+正式 Public Release Gate 通过且公开地址可用后，在 AstrBot 的 `data/plugins` 目录执行：
 
 ```powershell
 git clone https://github.com/fushuyiliu/astrbot_plugin_himeko.git
@@ -57,7 +57,7 @@ git clone https://github.com/fushuyiliu/astrbot_plugin_himeko.git
 - 安装顺序为“配置仓的通用 AstrBot 准备步骤 → 安装本插件 → 在本机填入主人 ID 和按需开关”。主人 ID 与任何凭据只保存在用户自己的 AstrBot 配置中。
 - 两仓只通过版本说明联动：本插件 1.0.0 要求 AstrBot `>=4.28,<5`。当配置模板或插件安装步骤变化时，才需要同时更新两边的兼容性说明；日常运行数据绝不跨仓提交。
 
-对应配置仓为 [astrbot_config_himeko](https://github.com/fushuyiliu/astrbot_config_himeko)。当前两个仓库均先以私有候选形式审查，待分别确认公开后链接才会面向一般使用者开放；请勿使用未审查的第三方镜像代替。
+对应配置仓为 [astrbot_config_himeko](https://github.com/fushuyiliu/astrbot_config_himeko)。两个仓库均作为公开发布候选独立审查；只有各自通过 Public Release Gate 并切换可见性后，链接才会面向一般使用者开放。请勿使用未审查的第三方镜像代替。
 
 ### 3. 配置主人与开关
 
@@ -148,7 +148,7 @@ AstrBot/data/plugin_data/astrbot_plugin_himeko/
 
 ## 已验证环境与限制
 
-- 已使用 Python 3.12 与 AstrBot 4.28.1 进行插件入口导入和 8 项单元测试；尚未在独立 AstrBot 实例完成完整消息平台安装验收。
+- 已使用 Python 3.12 与 AstrBot 4.28.1 进行插件入口导入和 9 项 public contract tests；尚未在独立 AstrBot 实例完成完整消息平台安装验收。
 - 不对响应速度、OCR 准确率、提醒准时率或模型输出正确性作性能承诺。
 - 附件大小限制为 20 MB；旧版 `.doc`、压缩包和可执行文件不支持。
 - 仅测试和支持主人私聊场景。群聊、多人隔离和跨平台同 ID 合并均不在首版范围内。
@@ -170,10 +170,14 @@ AstrBot/data/plugin_data/astrbot_plugin_himeko/
 
 ## 开发、测试与贡献
 
+public contract tests 需要一个已安装 `pytest` 且能够导入 AstrBot 的开发环境。可以使用已具备这两个条件的 AstrBot Python，也可以使用独立测试环境并在运行前将 AstrBot 源码根目录加入 `PYTHONPATH`。测试会把 AstrBot runtime 写入隔离临时目录，而不是候选源码根；通过 `HIMEKO_PUBLIC_CONTRACT_RUNTIME_ROOT` 指定该临时目录。示例只使用占位符，不需要把 AstrBot 源码复制进本仓：
+
 ```powershell
-python -m pytest
+$env:PYTHONPATH = "<path-to-AstrBot>;$env:PYTHONPATH"
+$env:HIMEKO_PUBLIC_CONTRACT_RUNTIME_ROOT = "<path-to-temporary-test-root>"
+python -m pytest tests/test_public_contract.py
 ruff check .
-python tools/audit_public_release.py .
+python tools/audit_public_release.py . --history .
 ```
 
 贡献前请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。安全问题请按 [SECURITY.md](SECURITY.md) 私下报告，不要在公开 issue 粘贴密钥或私人聊天内容。
