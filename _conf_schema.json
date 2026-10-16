@@ -28,7 +28,7 @@
   "enable_memory": {
     "type": "bool",
     "description": "启用主人专属记忆",
-    "hint": "只保存主人使用 /记住 明确确认的短事实；默认关闭。",
+    "hint": "保存主人用 /记住 明确要求的短事实；也可由插件逐条询问后，等待同一私聊中的明确肯定回复。默认关闭。",
     "default": false
   },
   "enable_reminders": {

@@ -13,7 +13,7 @@ This project integrates with [AstrBot](https://github.com/AstrBotDevs/AstrBot), 
 - Safe by default: memory, reminders, and attachments stay off until an exact owner ID is configured.
 - Private owner only: sensitive reads and writes reject group messages and non-owners; an AstrBot `platform_id` can be locked as well.
 - Own data directory: the plugin writes only below `data/plugin_data/astrbot_plugin_himeko/` and never reads a desktop, personal profile, knowledge base, or arbitrary host path.
-- Explicit memory: facts are stored only through `/remember`-style explicit intent; common key, password, code, and identity-number patterns are rejected.
+- Explicit memory: an owner's direct request can save a fact through `/remember`-style intent or a guarded tool; stable preferences can be proposed one at a time and require an explicit affirmative reply in the same private chat. Common key, password, code, and identity-number patterns are rejected.
 - Confirmed attachments: files are parsed locally first. Only after confirmation are extracted text and the question sent to the current AstrBot conversation model. The original file is removed after the answer or expiry.
 - No blind re-delivery: a reminder needs a freshly confirmed private context in the current process. After a restart or invalid context it is marked undeliverable rather than sent to an old session.
 
@@ -22,7 +22,7 @@ This project integrates with [AstrBot](https://github.com/AstrBotDevs/AstrBot), 
 | Feature | Default | Description |
 | --- | --- | --- |
 | Himeko interaction prompt | Off | Adds a general, unofficial role-expression prompt to the configured owner's private conversation. The model and persona remain configured in AstrBot. |
-| Owner memory | Off | Manually save, list, and delete up to 100 concise facts. |
+| Owner memory | Off | Save, list, and delete concise facts; confirmation-based suggestions are available; maximum 100 items. |
 | One-shot reminders | Off | Delivers only once to a currently verified owner private context. |
 | Attachment Q&A | Off | PDF, DOCX, HTML, and Markdown up to 20 MB; OCR for scanned PDF pages is an optional local dependency. |
 
@@ -55,7 +55,7 @@ This plugin repository can work alongside a public AstrBot configuration reposit
 - The **configuration repository** may contain sanitized AstrBot setup instructions, platform/model templates, and compatibility notes. It must not commit owner IDs, model keys, platform tokens, real chat records, databases, logs, or production configuration files.
 - This **plugin repository** contains only installable plugin source, dependencies, documentation, and tests. It must not copy runtime configuration from the configuration repository or read it through a Git submodule or automatic sync script.
 - The installation order is: generic AstrBot preparation from the configuration repository, install this plugin, then enter the owner ID and desired switches locally. Owner IDs and credentials remain in the user's own AstrBot configuration.
-- The repositories coordinate only through version notes: plugin 1.0.0 requires AstrBot `>=4.28,<5`. Update compatibility notes on both sides only when a configuration template or plugin-installation step changes; never commit runtime data across repositories.
+- The repositories coordinate only through version notes: plugin 1.1.0 requires AstrBot `>=4.28,<5`. Update compatibility notes on both sides only when a configuration template or plugin-installation step changes; never commit runtime data across repositories.
 
 The companion configuration repository is [astrbot_config_himeko](https://github.com/fushuyiliu/astrbot_config_himeko). Both repositories are independently reviewed as public-release candidates; each link is intended for general use only after its own Public Release Gate passes and visibility changes. Do not substitute an unreviewed third-party mirror.
 
@@ -90,6 +90,8 @@ All examples below are fictional:
 - `/记忆`: list the current owner's memories.
 - `/忘记 topic`: delete one memory.
 - `/清空记忆 确认`: delete all plugin memories.
+
+When the owner clearly asks to remember something, the guarded save tool can write it directly; negations and quoted mentions of “remember” do not authorize a write. For stable preferences, long-term goals, important agreements, or corrections, the model may make at most one suggestion per 10 user messages. A candidate exists only for 10 minutes in the current process and the same owner private chat; it is absent from memory retrieval and model context. The plugin writes it only after a later exact affirmative reply such as “yes”, “okay”, or “remember it”; rejection, a topic change, a new conversation, or a restart discards it. Attachments never initiate a memory suggestion.
 
 Memory is visible only to the same platform name, platform configuration, and owner ID combination. It is temporary, correctable context—not an instruction—and is never automatically written to an external document.
 

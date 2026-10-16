@@ -31,6 +31,7 @@ from .attachments import (
     page_label,
     parse_page_spec,
 )
+from .memory_confirmation import PendingMemoryStore, is_direct_memory_request
 from .reminders import (
     ReminderError,
     ReminderStateError,
@@ -46,6 +47,7 @@ SENSITIVE = re.compile(
 )
 PRIVATE_TOOLS = (
     "himeko_memory_save",
+    "himeko_memory_propose",
     "himeko_attachment_search",
     "himeko_attachment_read",
 )
@@ -66,6 +68,13 @@ class MemoryStore:
                 "PRIMARY KEY(owner, topic))"
             )
 
+    @staticmethod
+    def validate(topic: str, fact: str) -> tuple[str, str]:
+        topic, fact = topic.strip(), fact.strip()
+        if not topic or len(topic) > 60 or not fact or len(fact) > 600:
+            raise ValueError("主题须为 1—60 字，内容须为 1—600 字。")
+        return topic, fact
+
     def execute(self, owner: str, action: str, topic: str = "", fact: str = ""):
         """List, save, delete, or clear data for exactly one owner."""
         with closing(sqlite3.connect(self.path)) as db, db:
@@ -74,10 +83,13 @@ class MemoryStore:
                 return db.execute(
                     "SELECT topic, fact FROM memory WHERE owner=? ORDER BY topic", (owner,)
                 ).fetchall()
+            if action == "get":
+                row = db.execute(
+                    "SELECT fact FROM memory WHERE owner=? AND topic=?", (owner, topic.strip())
+                ).fetchone()
+                return row[0] if row else None
             if action == "save":
-                topic, fact = topic.strip(), fact.strip()
-                if not topic or len(topic) > 60 or not fact or len(fact) > 600:
-                    raise ValueError("主题须为 1—60 字，内容须为 1—600 字。")
+                topic, fact = self.validate(topic, fact)
                 count = db.execute(
                     "SELECT count(*) FROM memory WHERE owner=?", (owner,)
                 ).fetchone()[0]
@@ -106,7 +118,7 @@ class MemoryStore:
     "astrbot_plugin_himeko",
     "fushuyiliu",
     "Privacy-first owner memory, reminders, and local attachment Q&A.",
-    "1.0.0",
+    "1.1.0",
 )
 class HimekoPlugin(Star):
     """An opt-in companion layer; all sensitive features fail closed."""
@@ -119,6 +131,7 @@ class HimekoPlugin(Star):
         )
         self.data_root.mkdir(parents=True, exist_ok=True)
         self.store = MemoryStore(self.data_root / "memory.sqlite3")
+        self.pending_memories = PendingMemoryStore()
         self.attachments = AttachmentStore(self.data_root / "attachments")
         self.reminders = ReminderStore(self.data_root / "reminders")
         self.reminder_contexts: dict[tuple[str, str], tuple[str, str]] = {}
@@ -162,11 +175,62 @@ class HimekoPlugin(Star):
             return
         self.reminder_contexts[(digest(owner), digest(umo))] = (owner, umo)
 
+    @staticmethod
+    def _conversation(event: AstrMessageEvent) -> str:
+        """Return a private conversation scope without constructing a fallback identity."""
+        value = getattr(event, "unified_msg_origin", "")
+        return value if isinstance(value, str) else ""
+
     @filter.event_message_type(filter.EventMessageType.PRIVATE_MESSAGE, priority=220)
     async def observe_owner_context(self, event: AstrMessageEvent):
         """Refresh a volatile delivery context without retaining it on disk."""
         if self.enabled("enable_reminders"):
             self._remember_reminder_context(self.owner(event), event.unified_msg_origin)
+
+    @filter.event_message_type(filter.EventMessageType.PRIVATE_MESSAGE, priority=210)
+    async def confirm_pending_memory(self, event: AstrMessageEvent):
+        """Persist a candidate only when this conversation sends an exact affirmative reply."""
+        owner = self.owner(event)
+        conversation = self._conversation(event)
+        if owner is None or not conversation or not self.enabled("enable_memory"):
+            return
+        self.pending_memories.clear_other_conversations(owner, conversation)
+        outcome, candidate = self.pending_memories.consume_reply(
+            owner, conversation, event.message_str
+        )
+        if outcome == "none" or outcome == "changed_topic":
+            return
+        event.stop_event()
+        if outcome == "expired":
+            yield event.plain_result("刚才的记忆建议已超过 10 分钟，请重新确认后再保存。")
+            return
+        if outcome == "rejected":
+            yield event.plain_result("好的，这条内容不会保存为长期记忆。")
+            return
+        try:
+            if candidate is None or SENSITIVE.search(candidate.topic + " " + candidate.fact):
+                raise ValueError("不保存敏感凭据或身份号码。")
+            self.store.execute(owner, "save", candidate.topic, candidate.fact)
+            yield event.plain_result(f"已记住「{candidate.topic}」。")
+        except (OSError, sqlite3.Error):
+            yield event.plain_result("保存记忆时发生本地错误，这条内容尚未记住。")
+        except ValueError as exc:
+            yield event.plain_result(str(exc))
+
+    @filter.event_message_type(filter.EventMessageType.PRIVATE_MESSAGE, priority=200)
+    async def count_memory_suggestion_turns(self, event: AstrMessageEvent):
+        """Limit model-initiated proposals without limiting an explicit user command."""
+        owner = self.owner(event)
+        conversation = self._conversation(event)
+        text = str(event.message_str or "").strip()
+        if (
+            owner
+            and conversation
+            and self.enabled("enable_memory")
+            and text
+            and not text.startswith("/")
+        ):
+            self.pending_memories.note_user_message(owner)
 
     async def initialize(self):
         """Start reminder delivery only when its explicit feature flag is enabled."""
@@ -571,7 +635,7 @@ class HimekoPlugin(Star):
             return "此会话未启用私人记忆。"
         if event.get_extra("himeko_attachment_active"):
             return "附件问答不会自动写入记忆；请在新的普通对话中用 /记住 明确确认。"
-        if not any(word in str(event.message_str or "") for word in ("记住", "记下来", "remember")):
+        if not is_direct_memory_request(event.message_str):
             return "未检测到明确保存意图，请使用 /记住 主题 内容。"
         try:
             if SENSITIVE.search(topic + " " + fact):
@@ -580,6 +644,49 @@ class HimekoPlugin(Star):
             return "已保存该主题。纠正请用 /记住，删除请用 /忘记。"
         except ValueError as exc:
             return str(exc)
+        except (OSError, sqlite3.Error):
+            return "保存记忆时发生本地错误，这条内容尚未记住。"
+
+    @filter.llm_tool(name="himeko_memory_propose")
+    async def propose_memory(self, event: AstrMessageEvent, topic: str, fact: str) -> str:
+        """Propose only a user-stated stable preference, goal, agreement, or correction."""
+        owner = self.owner(event)
+        conversation = self._conversation(event)
+        if owner is None or not conversation or not self.enabled("enable_memory"):
+            return "此会话未启用私人记忆。"
+        if event.get_extra("himeko_attachment_active"):
+            return "附件内容不会自动提出保存建议。"
+        if is_direct_memory_request(event.message_str):
+            return "用户已明确要求保存，请改用 himeko_memory_save，不能绕过直接保存意图。"
+        try:
+            topic, fact = MemoryStore.validate(topic, fact)
+            if SENSITIVE.search(topic + " " + fact):
+                return "不保存敏感凭据或身份号码。"
+            existing = self.store.execute(owner, "get", topic)
+            if existing == fact:
+                return "已有相同的已保存记忆，无需再次询问或写入。"
+            candidate = self.pending_memories.propose(
+                owner, conversation, topic, fact, existing
+            )
+            if candidate is None:
+                return "为避免频繁建议，本轮不创建记忆候选；不要提及或保存此内容。"
+            if existing is None:
+                question = f"我想把「{topic}：{fact}」作为长期记忆保存，可以吗？"
+            else:
+                question = (
+                    f"我目前记得「{topic}：{existing}」。"
+                    f"要更新为「{topic}：{fact}」并保存吗？"
+                )
+            return (
+                "候选已由插件暂存，尚未写入记忆库。请向用户原样提出："
+                + question
+                + " 只有用户在下一条同一私聊中明确回复“可以”“好”“记住吧”等肯定词后，"
+                "插件才会保存；不要声称已经记住，也不能自行确认。"
+            )
+        except ValueError as exc:
+            return str(exc)
+        except (OSError, sqlite3.Error):
+            return "读取现有记忆时发生本地错误，未创建候选。"
 
     @filter.llm_tool(name="himeko_attachment_search")
     async def search_attachment_records(self, event: AstrMessageEvent, query: str) -> str:

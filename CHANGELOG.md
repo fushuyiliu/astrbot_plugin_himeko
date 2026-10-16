@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.0 - 2026-10-16
+
+- Added an owner- and conversation-scoped, in-process memory-confirmation candidate.
+- Added `himeko_memory_propose` for one-at-a-time suggestions about stable preferences,
+  long-term goals, agreements, and corrections; it can only persist after a later explicit
+  affirmative reply from the same private conversation.
+- Tightened natural-language direct-save recognition so negations and quoted mentions do not
+  authorize a write.
+
 ## 1.0.0 - 2026-10-06
 
 - First public-release candidate with an AstrBot visual configuration schema.
